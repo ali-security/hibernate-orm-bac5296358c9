@@ -119,6 +119,30 @@ public class CustomRunner extends BlockJUnit4ClassRunner {
 	}
 
 	@Override
+	protected void runChild(FrameworkMethod method, RunNotifier notifier) {
+		// Report why a test is skipped (dialect mismatch, @FailureExpected, @Ignore) so build logs carry skip reasons
+		final Ignore ignore = method.getAnnotation( Ignore.class );
+		if ( ignore != null ) {
+			final StringBuilder conditions = new StringBuilder();
+			for ( java.lang.annotation.Annotation annotation : getTestClass().getAnnotations() ) {
+				if ( annotation.annotationType().getName().startsWith( "org.hibernate.testing." ) ) {
+					conditions.append( ' ' ).append( annotation );
+				}
+			}
+			for ( java.lang.annotation.Annotation annotation : method.getAnnotations() ) {
+				if ( annotation.annotationType().getName().startsWith( "org.hibernate.testing." ) ) {
+					conditions.append( ' ' ).append( annotation );
+				}
+			}
+			log.info(
+					"SKIP-REASON " + getTestClass().getName() + "#" + method.getName() + " : " + ignore.value().replaceAll( "\\s+", " " ).trim()
+							+ " [test dialect " + dialect.getClass().getSimpleName() + ";" + conditions + "]"
+			);
+		}
+		super.runChild( method, notifier );
+	}
+
+	@Override
 	protected Statement methodBlock(FrameworkMethod method) {
 		log.info( Test.class.getSimpleName() + ": " + method.getName() );
 

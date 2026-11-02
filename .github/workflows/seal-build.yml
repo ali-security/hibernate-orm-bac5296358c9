@@ -1,0 +1,22 @@
+name: seal-build
+
+on:
+  workflow_dispatch: {}
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '8'
+      - name: Build hibernate-core jar
+        run: ./gradlew --no-daemon :hibernate-core:jar
+      - uses: actions/upload-artifact@v4
+        with:
+          name: hibernate-core-jar
+          path: hibernate-core/target/libs/hibernate-core-5.3.18.Final.jar
+          if-no-files-found: error

@@ -3,18 +3,26 @@ language: java
 
 jobs:
   include:
-    - stage: Oracle JDK 8
-      jdk: oraclejdk8
-    - stage: AdoptOpenJDK 11.0.3
-      install:
-        - curl -L -o install-jdk.sh https://github.com/sormuras/bach/raw/master/install-jdk.sh
-        - source ./install-jdk.sh --target ./openjdk11 --url https://github.com/AdoptOpenJDK/openjdk11-binaries/releases/download/jdk-11.0.3%2B7/OpenJDK11U-jdk_x64_linux_hotspot_11.0.3_7.tar.gz
+    - stage: test
+      name: "JDK 8"
+      env: JDK_URL=https://github.com/adoptium/temurin8-binaries/releases/download/jdk8u402-b06/OpenJDK8U-jdk_x64_linux_hotspot_8u402b06.tar.gz
+    - stage: test
+      name: "AdoptOpenJDK 11.0.3"
+      env: JDK_URL=https://github.com/AdoptOpenJDK/openjdk11-binaries/releases/download/jdk-11.0.3%2B7/OpenJDK11U-jdk_x64_linux_hotspot_11.0.3_7.tar.gz
+
+install:
+  - mkdir -p $HOME/seal-jdk
+  - curl -sSfL -o $HOME/seal-jdk.tar.gz "$JDK_URL"
+  - tar -xzf $HOME/seal-jdk.tar.gz -C $HOME/seal-jdk --strip-components=1
+  - export JAVA_HOME=$HOME/seal-jdk
+  - export PATH=$JAVA_HOME/bin:$PATH
 
 before_script:
   - java -version
-  - ./gradlew assemble
+  - ./gradlew :hibernate-core:assemble
 script:
-  - ./gradlew check -Plog-test-progress=true
+  - ./gradlew :hibernate-core:test -Plog-test-progress=true
+  - python3 .travis/test-report.py hibernate-core/target/test-results/test hibernate-core/src/test/java
 before_cache:
   - rm -f  $HOME/.gradle/caches/modules-2/modules-2.lock
   - rm -fr $HOME/.gradle/caches/*/plugin-resolution/
